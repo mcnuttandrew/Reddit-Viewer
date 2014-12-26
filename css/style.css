@@ -1,0 +1,11 @@
+body * {
+  border: thin solid black; 
+}
+
+div.textDiv {
+  height: 100px;
+}
+
+td, th {
+    padding: 1px 4px;
+}
