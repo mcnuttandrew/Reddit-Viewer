@@ -24,20 +24,52 @@
   this.loadIn = function(elements){
     var layerNodes = [];
     for(var i = 0; i < elements.length; i++){
+      
       if(elements[i].kind !== "more"){
         layerNodes.push(that.makeNode(elements[i]));
+      } else {
+        // $.ajax({
+        //   url: "http://www.reddit.com/api/morechildren",
+        //   data: {
+        //     link_id: "t3_2qk5jm",
+        //     children: "cn6xf5b"
+        //   },
+        //   type: "GET",
+        //   dataType: 'json',
+        //   async: true,
+        //   success: function(data){
+        //     debugger;
+        //   }
+        // })
       }
     }  
     return layerNodes;
   }
-  
+  this.maxScore = 0;
   this.makeNode = function(element){
     var text = element.data.body;
+    var score = element.data.score
     var children;
     if(element.data.replies){
       children = this.loadIn(element.data.replies.data.children);    
     }
-    return {"text": text, "children": children};
+    if(score > that.maxScore){that.maxScore = score}
+    return {"text": text, "children": children, "score": score};
+  }
+  
+  this.loadPageElements = function(body){
+    $(".picDiv").append("<a href=" + body[0].data.children[0].data.url + 
+                        "><img src=" + body[0].data.children[0].data.thumbnail +
+                         "></a>");
+    $(".titleArea").empty();
+    // debugger;
+    $(".titleArea").append("<h1>/" + body[0].data.children[0].data.subreddit + "/</h1>")
+  }
+  
+  this.getScoreRadius = function(node, scaler){
+    // debugger;
+    var rad = 10 * scaler * Math.log(1 + node.score/that.maxScore);
+    return (rad <= 1 ?  1 : rad);
   }
   
   $.ajax({
@@ -46,6 +78,7 @@
     dataType: 'json',
     async: false,
     success: function(body){
+      that.loadPageElements(body);
       that.rootNode = {"text": "root", "children": that.loadIn(body[1].data.children)};
     }
   })
@@ -57,8 +90,13 @@
     for(var i = 0; i < parent.children.length; i++){      
       var numKids = parent.children.length;
       var theta = 0;//Math.random() * 2 * Math.PI;
-      var newX = parentLocation["x"] + parentRadius * Math.cos(2 * Math.PI * i / numKids + theta);
-      var newY = parentLocation["y"] + parentRadius * Math.sin(2 * Math.PI * i / numKids + theta);
+      var newR = parentRadius; //* that.getScoreRadius(parent.children[i], .9);
+      var newX = parentLocation["x"] + newR * Math.cos(2 * Math.PI * i / numKids + theta);
+      var newY = parentLocation["y"] + newR * Math.sin(2 * Math.PI * i / numKids + theta);
+      // adjust for visual clarity
+      // while(newX >= width || newX <= 0 || newY >= height || newY <= 0){
+      //   
+      // }
       var kidLocation = {"x": newX, "y": newY};
       that.d3DataMap.push({"parentLocation": parentLocation, 
             "location": kidLocation, "parent": parent,
@@ -87,7 +125,7 @@
       }
     }
   }
-  this.treeTraversal({"x": width/2, "y": height/2}, this.rootNode, width/3);
+  this.treeTraversal({"x": width/2, "y": height/2}, this.rootNode, width/4);
   
   this.renderComments = function(){
     var textDiv = $(".textDiv");
@@ -104,32 +142,55 @@
   }
   
   this.renderComment = function(comment){
-    $(".textDiv").append("<div>" + comment.text +"</div>");
+    $(".textDiv").append("<div class='comment'>" + comment.text +"</div>");
   }
   
+  this.transitionProperty = function(data, property, positive, negative){
+    data.transition().attr(property, function(d){
+      for(var i = 0; i < that.commentRoute.length; i++){
+        if(that.commentRoute[i] == d.data){return positive;}
+      }
+      return negative;
+    })
+  }
+  
+  this.transitionPropertyChildren = function(data, property, positive){
+    // debugger;
+    if(!that.commentRoute[0].children){return;}
+    data.transition().attr(property, function(d){
+      for(var i = 0; i < that.commentRoute[0].children.length; i++){
+        if(that.commentRoute[0].children[i] == d.data){return positive;}
+      }
+      // return negative;
+    })
+  }
+    
   //draw shit & data bind
-  svg.selectAll("line").data(that.d3DataMap).enter().append("line")
+  this.lines = svg.selectAll("line").data(that.d3DataMap).enter().append("line")
       .attr("x1", function(d){return d.location.x;})
       .attr("y1", function(d){return d.location.y;})
       .attr("x2", function(d){return d.parentLocation.x;})
       .attr("y2", function(d){return d.parentLocation.y;})
-      .attr("stroke-width", 2).attr("stroke", "black");
-  svg.selectAll("circle").data(that.d3DataMap).enter().append("circle")
+      .attr("stroke-width", 1).attr("stroke", "black");
+  this.circleNodes = svg.selectAll("circle").data(that.d3DataMap).enter().append("circle")
       .attr("cx", function(d){return d.location.x;})
       .attr("cy", function(d){return d.location.y;})
-      .attr("r", 5)
-      .attr('fill', "#FFFFFF")
-      .attr('stroke', "#000000")
+      .attr("r",  function(d){return that.getScoreRadius(d.data, 5)})
+      .attr('fill', "#FFFFFF").attr('stroke', "#000000")
       .on("click", function(d){
         that.treeDFScaller(d.data);
         that.renderComments();
+        that.transitionPropertyChildren(that.circleNodes,'fill', 'green');
+        that.transitionProperty(that.circleNodes, 'fill', 'blue', 'white');
+        that.transitionProperty(that.lines, 'stroke', 'red', 'black');
+        that.transitionProperty(that.lines, 'stroke-width', 2, 1)
       } );
-  svg.append("circle").attr("cx", width/2).attr("cy", height/2)
+  this.rootCircleNode = svg.append("circle").attr("cx", width/2).attr("cy", height/2)
       .attr("r", 20).attr('fill', "blue").attr('stroke', "#000000")
       .on("click", function(d){
         that.treeDFScaller(that.rootNode);
         that.renderComments();
+        that.transitionPropertyChildren(that.circleNodes,'fill', 'green');
       } );
-      
   
 })()
