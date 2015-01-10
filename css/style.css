@@ -2,10 +2,16 @@ body * {
   border: thin solid black; 
 }
 
-div.textDiv {
-  height: 100px;
+div.commentsDiv{
+  min-width: 500px;
+  height: 500px
 }
 
-td, th {
-    padding: 1px 4px;
+div.textDiv {
+  height: 75%;
+  overflow: scroll; 
+}
+
+div.commentForm {
+  height: 25%;
 }

@@ -23,9 +23,7 @@
   var placeCircle = function(circleObject, coords){
     if(circleObject.data){ 
       var children = [];
-      var marking = "c";
       if(circleObject.data.replies){
-        marking = "r";
         children = circleObject.data.replies.data.children;
       } else if(circleObject.data.children){
         children = circleObject.data.children;
@@ -34,7 +32,7 @@
       if(children.length > 0){
         for(var i = 0; i < children.length; i++){
           this.child = children[i];
-          var newAddress = coords.dataAddress.concat([marking, i]);
+          var newAddress = coords.dataAddress.concat([i]);
           var newCoords = this.pickCoordinates(coords, children, i, newAddress);
           placeCircle(children[i], newCoords);
           this.drawCircleAndLine(coords, newCoords);
@@ -84,38 +82,12 @@
       return positiveColor; 
   }
   
-  this.retrieveComment = function(container, partial, address){
-    if((partial + "") === (address + "")){
-      // debugger;
-      // return container.data.children[partial.reverse()[0]]    
-      if(partial[partial.length - 2] === "c"){
-        var test = container.data.children[partial.reverse()[0]]
-        return test;
-      } else if(partial[partial.length - 2] === "r") {
-        // debugger;
-        return container.data.replies.data.children[partial.reverse()[0]]
-      }
-    } else {
-      // debugger;
-      var nextAddress = [];
-      for(var k = 0;  k < (partial.length + 2); k++){
-        nextAddress.push(address[k])
-      }
-      var nextContainer;
-      if(partial[partial.length - 2] === "c"){
-        nextContainer = container.data.children[partial[partial.length - 1]]
-      } else {
-        nextContainer = container.data.replies.data.children[partial[partial.length - 1]]
-      }
-      this.retrieveComment(nextContainer, nextAddress, address)
-    }
-  }
-
   this.selectComment = function(commentCircle){
     this.selectedAddress = commentCircle.getAttribute("dataAddress").split(",");
     svg.selectAll("line").remove();
     svg.selectAll("circle").remove();
-    this.getContent(this.selectedAddress, [])
+    // this.getContent(this.selectedAddress, [])
+    this.rightPanel();
     placeCircle(this.bodyContent[1], {r: 40, x: width / 2, y: height / 2, dataAddress: [] })    
     svg.append("circle").attr("cy", height / 2).attr("cx", width /2).attr("r", 40)
        .attr("fill", "blue" ).attr("stroke", "black") 
@@ -127,21 +99,63 @@
   var that = this;
   // this.commentTree = [];
   //production mode:
-  // $.ajax({
-  //   url: "http://www.reddit.com/r/OldSchoolCool/comments/2q6u8z/this_1969_german_swimming_pool.json",
-  //   type: "GET",
-  //   dataType: 'json',
-  //   async: false, //change later
-  //   success: function(body){
-  //     that.bodyContent = body;
-  //     that.firstLayer = body[1].data.children;
-  //     // body[1].data.children[0].data.body;
-  //   }
-  // })
+  //http://www.reddit.com/r/pics/comments/2qk5jm/handmade_pizza.json
+  $.ajax({
+    url: "http://www.reddit.com/r/pics/comments/2qk5jm/handmade_pizza.json",
+    type: "GET",
+    dataType: 'json',
+    async: false, //change later
+    success: function(body){
+      that.bodyContent = body;
+      that.firstLayer = body[1].data.children;
+      // body[1].data.children[0].data.body;
+    }
+  })
   
+  var loadIn = function(layer){
+    var layerAssemble = [];
+    for(var k = 0; k < layer.length; k++){
+      var tempAssemble = [];
+      if(layer[k].data && layer[k].kind === 't1'){
+        if(layer[k].data.body){
+          var content = layer[k].data.body;
+          var children;
+          if(layer[k].data.replies){
+            tempAssemble.push(loadIn(layer[k].data.replies.data.children))
+          }
+          tempAssemble.push()
+        }
+      }
+      //filter out "nonresults"
+      tempTemp = []
+      for(var i = 0; i < tempAssemble.length; i++){
+        if(typeof tempAssemble === "string" || tempAssemble.length > 0){
+          tempTemp.push(tempAssemble);
+        }
+      }
+      layerAssemble.push(tempTemp);
+    }
+    return layerAssemble;
+  }
+  
+  this.getComment = function(container, partial, address){
+    if(!container){return;}
+    if((partial + "") === (address + "")){
+      console.log(container[0])
+      return container[0];
+    } else {
+      var newAddress = []
+      for(var k = 0; k <= partial.length; k++){
+        newAddress.push(address[k])
+      }
+      return getComment(container[newAddress[newAddress.length - 1]], newAddress, address);
+    }
+  }
   //local development mode: 
-  this.bodyContent = this.fixtureData;
-  this.firstLayer = this.bodyContent[1].data.children;
+  // this.bodyContent = this.fixtureData;
+  // this.firstLayer = this.bodyContent[1].data.children;
+  this.commentTree = loadIn(this.firstLayer);
+  // var test = this.getComment(this.commentTree, [], [0, 1, 0]);
   
   //display data
     //left panel
@@ -150,35 +164,15 @@
        .attr("fill", "blue" ).attr("stroke", "black") 
        
     //right panel
-    this.getContent = function(fullAddress, currentAddress){
-      if(currentAddress.length === 0){
-        $(".textDiv").empty();
-        this.selectedComments = [];
-      }
-      if((fullAddress + "") === (currentAddress + "")){
-        // var tr = d3.select("tbody").selectAll("tr").data(this.selectedComments)
-        //            .enter().append("tr");
-        var td = d3.select(".textDiv").selectAll("div")
-                   .data(that.selectedComments)
-                   .enter().append("div")
-                   .text(function(d) {
-                    //  debugger;
-                      var partialAddress = [d.dataAddress[0], d.dataAddress[1]];
-                      var selectedCom = that.retrieveComment(that.bodyContent[1], partialAddress, d.dataAddress);
-                      
-                      if(selectedCom){console.log(selectedCom.data.body); return selectedCom.data.body;}
-                    })          
-      } else {
-        var nextAddress = [];
-        for(var k = 0;  k < (currentAddress.length + 2); k++){
-          nextAddress.push(fullAddress[k])
+  this.rightPanel = function(){
+    var commentsList = [];
+    for(var k = 0; k < this.selectedAddress.length; k++){
+        var commentAddress = [];
+        for(var j = 0; j <= k; j++){
+          commentAddress.push(that.selectedAddress[j]);
         }
-        
-        this.selectedComments.push(this.addressHash[nextAddress.join(",")])
-        this.getContent(fullAddress, nextAddress);
-      }
-      //if this is the terminating node then display all of the children      
+        commentsList.push(this.getComment(this.commentTree, [], commentAddress));
     }
-    this.selectedComments = [];
-    this.getContent(this.selectedAddress, [])
+  }
+    
 })()
