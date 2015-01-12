@@ -4,8 +4,6 @@
       height           = $(".textDiv").width(),
       width            = $(".textDiv").width(),//set to arb later
       duration         = 500;
-  this.selectedNode = [];
-  this.addressHash     = {};      
 
   $(".nodeDiv").empty();
   var svg =  d3.select(".nodeDiv")
@@ -68,12 +66,13 @@
   
   this.getScoreRadius = function(node, scaler){
     // debugger;
-    var rad = 10 * scaler * Math.log(1 + node.score/that.maxScore);
+    var rad = 10 * scaler * Math.log(1.05 + node.score/that.maxScore);
     return (rad <= 1 ?  1 : rad);
   }
   
   $.ajax({
-    url: "http://www.reddit.com/r/pics/comments/2qk5jm/handmade_pizza.json",
+    url: "http://www.reddit.com/r/pics/comments/2s2pob/reeses_pieces_snake_cake_that_took_my_uncle_six.json",
+    // url: "http://www.reddit.com/r/pics/comments/2qk5jm/handmade_pizza.json",
     type: "GET",
     dataType: 'json',
     async: false,
@@ -83,25 +82,49 @@
     }
   })
   
+  this.massingTreeTraversal = function(node){
+    if(!node.children || node.children.length < 1){
+      node["mass"] = 1;
+      return 1;
+    }
+    var total = 0;
+    for(var i = 0; i < node.children.length; i++){
+      total += that.massingTreeTraversal(node.children[i]);
+    }
+    return node["mass"] = total;
+  }
+  
   //map the data, via a simple b tree traversal
   that.d3DataMap = [];
   this.treeTraversal = function(parentLocation, parent, parentRadius){
     if(!parent.children){return;}
+    //responsive angles
+    var childrenSum = 0;
+    var childrenCounts = [];
     for(var i = 0; i < parent.children.length; i++){      
-      var numKids = parent.children.length;
-      var theta = 0;//Math.random() * 2 * Math.PI;
-      var newR = parentRadius; //* that.getScoreRadius(parent.children[i], .9);
-      var newX = parentLocation["x"] + newR * Math.cos(2 * Math.PI * i / numKids + theta);
-      var newY = parentLocation["y"] + newR * Math.sin(2 * Math.PI * i / numKids + theta);
+      childrenCounts.push(parent.children[i].mass);
+      childrenSum += parent.children[i].mass;
+    }
+    var sumAngle = 0;
+    for(var i = 0; i < parent.children.length; i++){
+      var sizeR = that.getScoreRadius(parent.children[i], 5);
+      var newR = parent.children[i].mass + parentRadius + sizeR;
+      var theta = 2 * Math.PI * childrenCounts[i] / childrenSum + sumAngle;
+      sumAngle += theta;
+
+      var newX = parentLocation["x"] + (newR + sizeR) * Math.cos(theta);
+      var newY = parentLocation["y"] + (newR + sizeR) * Math.sin(theta);
       // adjust for visual clarity
-      // while(newX >= width || newX <= 0 || newY >= height || newY <= 0){
-      //   
-      // }
+      while((newX + sizeR) >= width || (newX - sizeR) <= 0 || (newY + sizeR) >= height || (newY - sizeR) <= 0){
+        theta += .4;
+        newX = parentLocation["x"] + newR * Math.cos(theta);
+        newY = parentLocation["y"] + newR * Math.sin(theta);
+      }
       var kidLocation = {"x": newX, "y": newY};
       that.d3DataMap.push({"parentLocation": parentLocation, 
             "location": kidLocation, "parent": parent,
             "data": parent.children[i]});
-      that.treeTraversal(kidLocation, parent.children[i], parentRadius / 2);
+      that.treeTraversal(kidLocation, parent.children[i], parent.mass);
     }
   }
   
@@ -125,24 +148,29 @@
       }
     }
   }
-  this.treeTraversal({"x": width/2, "y": height/2}, this.rootNode, width/4);
+  this.massingTreeTraversal(this.rootNode);
+  this.treeTraversal({"x": width/2, "y": height/2}, this.rootNode, width/10);
   
   this.renderComments = function(){
     var textDiv = $(".textDiv");
     textDiv.empty();
     var comlen = that.commentRoute.length;
     for(var i = comlen - 2; i >= 0; i--){
-      that.renderComment(that.commentRoute[i])
+      that.renderComment(that.commentRoute[i], 0)
     }
     if(that.commentRoute[0].children){
       for(var i = 0; i < that.commentRoute[0].children.length; i++){
-        that.renderComment(that.commentRoute[0].children[i]);
+        that.renderComment(that.commentRoute[0].children[i], 1);
       }
     }
   }
   
-  this.renderComment = function(comment){
-    $(".textDiv").append("<div class='comment'>" + comment.text +"</div>");
+  this.renderComment = function(comment, bump){
+    var left = 'col-xs-' + bump + 1;
+    var right = 'col-xs-' + (11-bump);
+    $(".textDiv").append("<div class='comment row'>" + 
+        "<div class=" + left + "></div>" + 
+        "<div class=" + right + ">" + comment.text +"</div></div>");
   }
   
   this.transitionProperty = function(data, property, positive, negative){
@@ -154,14 +182,16 @@
     })
   }
   
-  this.transitionPropertyChildren = function(data, property, positive){
-    // debugger;
+  this.transitionPropertyWithChildren = function(data, property, positive, negative, child){
     if(!that.commentRoute[0].children){return;}
     data.transition().attr(property, function(d){
       for(var i = 0; i < that.commentRoute[0].children.length; i++){
-        if(that.commentRoute[0].children[i] == d.data){return positive;}
+        if(that.commentRoute[0].children[i] == d.data){return child;}
       }
-      // return negative;
+      for(var i = 0; i < that.commentRoute.length; i++){
+        if(that.commentRoute[i] == d.data){return positive;}
+      }
+      return negative;
     })
   }
     
@@ -178,19 +208,24 @@
       .attr("r",  function(d){return that.getScoreRadius(d.data, 5)})
       .attr('fill', "#FFFFFF").attr('stroke', "#000000")
       .on("click", function(d){
+        console.log(d.data.mass)
         that.treeDFScaller(d.data);
         that.renderComments();
-        that.transitionPropertyChildren(that.circleNodes,'fill', 'green');
         that.transitionProperty(that.circleNodes, 'fill', 'blue', 'white');
-        that.transitionProperty(that.lines, 'stroke', 'red', 'black');
-        that.transitionProperty(that.lines, 'stroke-width', 2, 1)
+        that.transitionPropertyWithChildren(that.circleNodes,'fill', 'blue', 'white', 'green');
+        that.transitionPropertyWithChildren(that.lines, 'stroke-width', 2, 1, 1.5)
       } );
   this.rootCircleNode = svg.append("circle").attr("cx", width/2).attr("cy", height/2)
-      .attr("r", 20).attr('fill', "blue").attr('stroke', "#000000")
+      .attr("r", 40).attr('fill', "blue").attr('stroke', "#000000")
       .on("click", function(d){
         that.treeDFScaller(that.rootNode);
         that.renderComments();
-        that.transitionPropertyChildren(that.circleNodes,'fill', 'green');
+        that.transitionPropertyWithChildren(that.circleNodes,'fill', 'blue', 'white', 'green');
       } );
   
+  
+  //click root node on default
+  that.treeDFScaller(that.rootNode);
+  that.renderComments();
+  that.transitionPropertyWithChildren(that.circleNodes,'fill', 'blue', 'white', 'green');
 })()
