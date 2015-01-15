@@ -18,27 +18,35 @@
 
   //get and assemble data
   var that = this;
+  this.counter = 0;
   this.rootNode;
   this.loadIn = function(elements){
     var layerNodes = [];
     for(var i = 0; i < elements.length; i++){
-      
       if(elements[i].kind !== "more"){
         layerNodes.push(that.makeNode(elements[i]));
+        that.counter += 1;
       } else {
-        // $.ajax({
-        //   url: "http://www.reddit.com/api/morechildren",
-        //   data: {
-        //     link_id: "t3_2qk5jm",
-        //     children: "cn6xf5b"
-        //   },
-        //   type: "GET",
-        //   dataType: 'json',
-        //   async: true,
-        //   success: function(data){
-        //     debugger;
-        //   }
-        // })
+        var subchildren = elements[i].data.children
+        for(var j = 0; j < 2; j++){//subchildren.length; j++){
+          $.ajax({
+            url: "http://www.reddit.com/api/morechildren.json",
+            type: "GET",
+            dataType: 'json',
+            data: { link_id: that.threadId, children: subchildren.join(",") },          
+            async: true,
+            success: function(data){
+              var childrenData = data.jquery[data.jquery.length - 1][3]
+              if(childrenData.length > 0){
+                childrenData = childrenData[0];
+                for(var k = 0; k < childrenData.length; k++){
+                  layerNodes.push(that.makeNode(childrenData[k]));
+                  that.counter += 1;
+                }
+              }
+            }
+          })          
+        }
       }
     }  
     return layerNodes;
@@ -70,13 +78,15 @@
     return (rad <= 1 ?  1 : rad);
   }
   
-  $.ajax({
-    url: "http://www.reddit.com/r/pics/comments/2s2pob/reeses_pieces_snake_cake_that_took_my_uncle_six.json",
+  $.ajax({    
+    url: "http://www.reddit.com/r/funny/comments/2sgr2g/great_use_of_science.json",
     // url: "http://www.reddit.com/r/pics/comments/2qk5jm/handmade_pizza.json",
     type: "GET",
     dataType: 'json',
     async: false,
     success: function(body){
+      that.totalComments = body[0].data.children[0].data.num_comments;
+      that.threadId = body[0].data.children[0].data.name;
       that.loadPageElements(body);
       that.rootNode = {"text": "root", "children": that.loadIn(body[1].data.children)};
     }
@@ -84,8 +94,8 @@
   
   this.massingTreeTraversal = function(node){
     if(!node.children || node.children.length < 1){
-      node["mass"] = 1;
-      return 1;
+      node["mass"] = 2;
+      return 2;
     }
     var total = 0;
     for(var i = 0; i < node.children.length; i++){
@@ -96,8 +106,8 @@
   
   //map the data, via a simple b tree traversal
   that.d3DataMap = [];
-  this.treeTraversal = function(parentLocation, parent, parentRadius){
-    if(!parent.children){return;}
+  this.treeTraversal = function(parentLocation, parent, parentRadius, parentAngle){
+    if(!parent || !parent.children){return;}
     //responsive angles
     var childrenSum = 0;
     var childrenCounts = [];
@@ -108,23 +118,36 @@
     var sumAngle = 0;
     for(var i = 0; i < parent.children.length; i++){
       var sizeR = that.getScoreRadius(parent.children[i], 5);
-      var newR = parent.children[i].mass + parentRadius + sizeR;
-      var theta = 2 * Math.PI * childrenCounts[i] / childrenSum + sumAngle;
-      sumAngle += theta;
+      var newR = parent.children[i].mass/4 + parentRadius + sizeR/3;
+      var theta = 2 * Math.PI * (childrenCounts[i] / childrenSum  + sumAngle);
+      sumAngle += childrenCounts[i] / childrenSum;
 
-      var newX = parentLocation["x"] + (newR + sizeR) * Math.cos(theta);
-      var newY = parentLocation["y"] + (newR + sizeR) * Math.sin(theta);
+      var newX = parentLocation["x"] + (newR + sizeR) * Math.cos(theta + parentAngle);
+      var newY = parentLocation["y"] + (newR + sizeR) * Math.sin(theta + parentAngle);
       // adjust for visual clarity
       while((newX + sizeR) >= width || (newX - sizeR) <= 0 || (newY + sizeR) >= height || (newY - sizeR) <= 0){
-        theta += .4;
+        newR = newR * .8;
         newX = parentLocation["x"] + newR * Math.cos(theta);
         newY = parentLocation["y"] + newR * Math.sin(theta);
       }
+      // for(var i = 0; i < that.d3DataMap.length; i++){
+      //   if(!that.d3DataMap[i].data){break;}
+      //   var olSize = that.getScoreRadius(that.d3DataMap[i].data, 5);
+      //   while(newX < (that.d3DataMap[i].location.x + olSize)  && newX > (that.d3DataMap[i].location.x - olSize) && newY < (that.d3DataMap[i].location.y + olSize)  && newY > (that.d3DataMap[i].location.y - olSize)){
+      //     theta += .4;
+      //     newX = parentLocation["x"] + newR * Math.cos(theta);
+      //     newY = parentLocation["y"] + newR * Math.sin(theta);
+      //   }
+      // }
       var kidLocation = {"x": newX, "y": newY};
       that.d3DataMap.push({"parentLocation": parentLocation, 
             "location": kidLocation, "parent": parent,
             "data": parent.children[i]});
-      that.treeTraversal(kidLocation, parent.children[i], parent.mass);
+      var omega = 0;
+      if(parent.children[i].children && (parent.children[i].children.length % 2 === 0) ){
+        omega += 2 * Math.PI /16/// parent.children[i].children.length; 
+      }
+      that.treeTraversal(kidLocation, parent.children[i], parent.mass, omega + theta + parentAngle);
     }
   }
   
@@ -149,7 +172,7 @@
     }
   }
   this.massingTreeTraversal(this.rootNode);
-  this.treeTraversal({"x": width/2, "y": height/2}, this.rootNode, width/10);
+  this.treeTraversal({"x": width/2, "y": height/2}, this.rootNode, width/10, 0);
   
   this.renderComments = function(){
     var textDiv = $(".textDiv");
@@ -171,6 +194,12 @@
     $(".textDiv").append("<div class='comment row'>" + 
         "<div class=" + left + "></div>" + 
         "<div class=" + right + ">" + comment.text +"</div></div>");
+  }
+  this.selectedCommentIncluded = function(comment){
+    for(var i = 0; i < that.commentRoute.length; i++){
+      if(that.commentRoute[i] === comment){return true;}
+    }
+    return false;
   }
   
   this.transitionProperty = function(data, property, positive, negative){
@@ -208,12 +237,11 @@
       .attr("r",  function(d){return that.getScoreRadius(d.data, 5)})
       .attr('fill', "#FFFFFF").attr('stroke', "#000000")
       .on("click", function(d){
-        console.log(d.data.mass)
         that.treeDFScaller(d.data);
         that.renderComments();
         that.transitionProperty(that.circleNodes, 'fill', 'blue', 'white');
         that.transitionPropertyWithChildren(that.circleNodes,'fill', 'blue', 'white', 'green');
-        that.transitionPropertyWithChildren(that.lines, 'stroke-width', 2, 1, 1.5)
+        that.transitionPropertyWithChildren(that.lines, 'stroke-width', 2, 1, 1.5);
       } );
   this.rootCircleNode = svg.append("circle").attr("cx", width/2).attr("cy", height/2)
       .attr("r", 40).attr('fill', "blue").attr('stroke', "#000000")
