@@ -1,10 +1,10 @@
-(function(){
+var chart = (function(address){
   //d3 preamble
   var margin           = {top: 0, right: 0, bottom: 0, left: 0},
       height           = $(".textDiv").width(),
       width            = $(".textDiv").width(),//set to arb later
       duration         = 500;
-
+  $(".picDiv").empty();
   $(".nodeDiv").empty();
   var svg =  d3.select(".nodeDiv")
                 .append("svg")
@@ -28,25 +28,23 @@
         that.counter += 1;
       } else {
         var subchildren = elements[i].data.children
-        for(var j = 0; j < 2; j++){//subchildren.length; j++){
-          $.ajax({
-            url: "http://www.reddit.com/api/morechildren.json",
-            type: "GET",
-            dataType: 'json',
-            data: { link_id: that.threadId, children: subchildren.join(",") },          
-            async: true,
-            success: function(data){
-              var childrenData = data.jquery[data.jquery.length - 1][3]
-              if(childrenData.length > 0){
-                childrenData = childrenData[0];
-                for(var k = 0; k < childrenData.length; k++){
-                  layerNodes.push(that.makeNode(childrenData[k]));
-                  that.counter += 1;
-                }
+        $.ajax({
+          url: "http://www.reddit.com/api/morechildren.json",
+          type: "GET",
+          dataType: 'json',
+          data: { link_id: that.threadId, children: subchildren.join(",") },          
+          async: true,
+          success: function(data){
+            var childrenData = data.jquery[data.jquery.length - 1][3]
+            if(childrenData.length > 0){
+              childrenData = childrenData[0];
+              for(var k = 0; k < childrenData.length; k++){
+                layerNodes.push(that.makeNode(childrenData[k]));
+                that.counter += 1;
               }
             }
-          })          
-        }
+          }
+        })          
       }
     }  
     return layerNodes;
@@ -78,8 +76,9 @@
     return (rad <= 1 ?  1 : rad);
   }
   
-  $.ajax({    
-    url: "http://www.reddit.com/r/funny/comments/2sgr2g/great_use_of_science.json",
+  $.ajax({
+    url: address,
+    // url: "http://www.reddit.com/r/funny/comments/2sgr2g/great_use_of_science.json",
     // url: "http://www.reddit.com/r/pics/comments/2qk5jm/handmade_pizza.json",
     type: "GET",
     dataType: 'json',
@@ -256,4 +255,16 @@
   that.treeDFScaller(that.rootNode);
   that.renderComments();
   that.transitionPropertyWithChildren(that.circleNodes,'fill', 'blue', 'white', 'green');
-})()
+})
+
+
+
+chart("http://www.reddit.com/r/funny/comments/2sgr2g/great_use_of_science.json");
+$("#newAddressSubmit").on('click', function(event){
+
+  //guarentee safety later
+  var targ = $("#addressInput")[0].value.split("");
+  targ[targ.length - 1] = ".json";
+  targ = targ.join("");
+  chart(targ);
+})
