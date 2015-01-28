@@ -28,22 +28,22 @@ var chart = (function(address){
         that.counter += 1;
       } else {
         var subchildren = elements[i].data.children
-        $.ajax({
-          url: "http://www.reddit.com/api/morechildren.json",
-          type: "GET",
-          dataType: 'json',
-          data: { link_id: that.threadId, children: subchildren.join(",") },          
-          async: false,
-          success: function(data){
-            var childrenData = data.jquery[data.jquery.length - 1][3]
-            if(childrenData.length > 0){
-              childrenData = childrenData[0];
-              for(var k = 0; k < childrenData.length; k++){
-                layerNodes.push(that.makeNode(childrenData[k]));
-                that.counter += 1;
-              }
-            }
-          }
+        // $.ajax({
+        //   url: "http://www.reddit.com/api/morechildren.json",
+        //   type: "GET",
+        //   dataType: 'json',
+        //   data: { link_id: that.threadId, children: subchildren.join(",") },          
+        //   async: true,
+        //   success: function(data){
+        //     var childrenData = data.jquery[data.jquery.length - 1][3]
+        //     if(childrenData.length > 0){
+        //       childrenData = childrenData[0];
+        //       for(var k = 0; k < childrenData.length; k++){
+        //         layerNodes.push(that.makeNode(childrenData[k]));
+        //         that.counter += 1;
+        //       }
+        //     }
+        //   }
         })          
       }
     }  
