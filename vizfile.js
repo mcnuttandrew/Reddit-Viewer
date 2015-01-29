@@ -44,7 +44,7 @@ var chart = (function(address){
         //       }
         //     }
         //   }
-        })          
+        // })          
       }
     }  
     return layerNodes;
@@ -52,22 +52,29 @@ var chart = (function(address){
   this.maxScore = 0;
   this.makeNode = function(element){
     var text = element.data.body;
-    var score = element.data.score
+    var score = element.data.score;
+    var author = element.data.author;
     var children;
     if(element.data.replies){
       children = this.loadIn(element.data.replies.data.children);    
     }
     if(score > that.maxScore){that.maxScore = score}
-    return {"text": text, "children": children, "score": score};
+    return {"text": text, "children": children, "score": score, "author": author};
   }
   
   this.loadPageElements = function(body){
-    $(".picDiv").append("<a href=" + body[0].data.children[0].data.url + 
-                        "><img src=" + body[0].data.children[0].data.thumbnail +
-                         "></a>");
-    $(".titleArea").empty();
-    // debugger;
-    $(".titleArea").append("<h1>/" + body[0].data.children[0].data.subreddit + "/</h1>")
+    $(".picDiv").empty();
+    var postInfo = body[0].data.children[0].data;
+    $(".picDiv").append(
+      "<div class='row'><div class='col-xs-3'>" 
+      +  "<a href=" + postInfo.url + "><img src=" + postInfo.thumbnail + "></a>"
+      + "</div><div class='col-xs-8'>" 
+      + "<h4><a href='" + postInfo.url + "'>" 
+      + postInfo.title + '</a></h4>'
+      + "<h5>" + postInfo.author + " on " + new Date(postInfo.created_utc) +"</h5>"
+      + "</div></div>")
+    $(".titleArea").empty();     
+    $(".titleArea").append("<h1>/" + postInfo.subreddit + "/</h1>")
   }
   
   this.getScoreRadius = function(node, scaler){
@@ -130,6 +137,7 @@ var chart = (function(address){
         newX = parentLocation["x"] + newR * Math.cos(theta);
         newY = parentLocation["y"] + newR * Math.sin(theta);
       }
+      // wiggler
       // for(var i = 0; i < that.d3DataMap.length; i++){
       //   if(!that.d3DataMap[i].data){break;}
       //   var olSize = that.getScoreRadius(that.d3DataMap[i].data, 5);
@@ -188,13 +196,23 @@ var chart = (function(address){
     }
   }
   
+  //god i wish i had a templating engine
   this.renderComment = function(comment, bump){
-    var left = 'col-xs-' + bump + 1;
-    var right = 'col-xs-' + (11-bump);
-    $(".textDiv").append("<div class='comment row'>" + 
-        "<div class=" + left + "></div>" + 
-        "<div class=" + right + ">" + comment.text +"</div></div>");
+    var commentString = "<div class='comment row'>"
+    if(bump === 0){
+      commentString += "<div class='col-xs-12 commentHold'>"
+    } else {
+      commentString += "<div class='col-xs-1 commentPush'></div>" 
+      commentString += "<div class='col-xs-11 commentHold'>"
+      // var commentRow = $($($(".textDiv").last()[0]).children()[0]).children();  
+      // $(commentRow[0]).height($(commentRow[1]).height());
+    }
+    
+    commentString += "<p class='commentBlock'>" + comment.text + "</p>"
+    commentString += "<h5>" + comment.author + "</h5></div></div>"
+    $(".textDiv").append(commentString);
   }
+  
   this.selectedCommentIncluded = function(comment){
     for(var i = 0; i < that.commentRoute.length; i++){
       if(that.commentRoute[i] === comment){return true;}
@@ -223,6 +241,11 @@ var chart = (function(address){
       return negative;
     })
   }
+  
+  this.postStatistics = function(){
+    $(".statArea h1").empty();
+    $(".statArea h1").append("displaying ("+this.counter +"/"+ this.totalComments + ")")
+  }
     
   //draw shit & data bind
   this.lines = svg.selectAll("line").data(that.d3DataMap).enter().append("line")
@@ -240,7 +263,7 @@ var chart = (function(address){
         that.treeDFScaller(d.data);
         that.renderComments();
         that.transitionProperty(that.circleNodes, 'fill', 'blue', 'white');
-        that.transitionPropertyWithChildren(that.circleNodes,'fill', 'blue', 'white', 'green');
+        that.transitionPropertyWithChildren(that.circleNodes,'fill', 'blue', 'white', 'orangered');
         that.transitionPropertyWithChildren(that.lines, 'stroke-width', 2, 1, 1.5);
       } );
   this.rootCircleNode = svg.append("circle").attr("cx", width/2).attr("cy", height/2)
@@ -248,28 +271,29 @@ var chart = (function(address){
       .on("click", function(d){
         that.treeDFScaller(that.rootNode);
         that.renderComments();
-        that.transitionPropertyWithChildren(that.circleNodes,'fill', 'blue', 'white', 'green');
+        that.transitionPropertyWithChildren(that.circleNodes,'fill', 'blue', 'white', 'orangered');
       } );
-  
-  
+
   //click root node on default
   that.treeDFScaller(that.rootNode);
   that.renderComments();
-  that.transitionPropertyWithChildren(that.circleNodes,'fill', 'blue', 'white', 'green');
-  
-  //post our statistics to the title line
-  $(".titleArea h1").append("("+this.counter +"/"+ this.totalComments + ")")
-  
+  that.transitionPropertyWithChildren(that.circleNodes,'fill', 'blue', 'white', 'orangered');
+  that.postStatistics();
 })
 
-
-
-chart("http://www.reddit.com/r/funny/comments/2sgr2g/great_use_of_science.json");
+// chart("http://www.reddit.com/r/funny/comments/2sgr2g/great_use_of_science.json");
 $("#newAddressSubmit").on('click', function(event){
-
-  //guarentee safety later
+  var prefix = new RegExp("http://www.reddit.com/r/");
   var targ = $("#addressInput")[0].value.split("");
   targ[targ.length - 1] = ".json";
   targ = targ.join("");
-  chart(targ);
+  if(prefix.test(targ) && targ.split("")[0] === "h"){
+    chart(targ);
+    $(".commentsDiv").height( $(window).height() - $(".header").height())
+    $('#selectReddit').modal('hide');
+  }
+})
+
+$("#selectReddit").on('shown.bs.modal', function(event){
+    //ping reddit for the top threads. 
 })

@@ -1,5 +1,32 @@
-body * {
-  border: thin solid black; 
+body{
+  overflow-x: hidden;   
+}
+
+.commentPush{
+  /*border-left: thick solid black; */
+  /*border-bottom: thin solid black;  */
+  border-top: thin solid black; 
+}
+
+.commentHold {
+  border-left: thin solid black;
+  /*border-top: thin solid black;*/
+}
+
+span.lineholder{
+  width: 20px;
+}
+
+p.commentBlock{
+    margin: 0px;
+}
+
+h5 {
+  margin-top: 0;
+}
+
+.header {
+  background-color: #CEE3F8;
 }
 
 div.commentsDiv{
@@ -10,6 +37,12 @@ div.commentsDiv{
 div.textDiv {
   height: 75%;
   overflow-y: scroll; 
+  overflow-x: hidden; 
+}
+
+div.commentPush {
+  min-height: 22px;
+  background-color: orangered;
 }
 
 div.commentForm {
