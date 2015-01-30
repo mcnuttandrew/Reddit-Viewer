@@ -59,3 +59,20 @@ ul#topRedditThreads {
 ul#topRedditThreads > li:hover {
   border: thin solid red
 } 
+
+#showpic {
+  top: -5%;
+  right: 49.25%;
+  outline: none;
+}
+
+#showpic > .fade {
+   background-repeat: no-repeat;
+   background-size: contain;
+   background-color: white;
+}
+
+#imagehole{
+  height: 100%;
+  width: 100%;
+}

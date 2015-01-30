@@ -27,32 +27,34 @@
     
 
 
-    <!-- Modal -->
+    <!-- Modals -->
     <div class="modal fade" id="selectReddit" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-body">
-          
-              <div class="row">
-                <div class="col-xs-12 text-center">
-                  <h3> enter a full http address of a reddit thread</h3>
-                  <input type="text" id="addressInput" style="width: 100%">
-                  <button type="button btn btn-primary btn-lg" id="newAddressSubmit">Submit</button>
-                  
-                  <h4> if you can't think of any here are the top ones on reddit</h4>
-                  <ul id="topRedditThreads">
-                    
-                  </ul>
-                </div>
+            <div class="row">
+              <div class="col-xs-12 text-center">
+                <h3> enter a full http address of a reddit thread</h3>
+                <input type="text" id="addressInput" style="width: 100%">
+                <button type="button btn btn-primary btn-lg" id="newAddressSubmit">Submit</button>
+                <h4> if you can't think of any here are the top ones on reddit</h4>
+                <ul id="topRedditThreads"></ul>
               </div>
-            
+            </div>
           </div>
         </div>
       </div>
     </div>
+    
+    <div class="modal fade" id="showpic" tabindex="-1" role="dialog" aria-hidden="true">
+      <div class="modal-dialog imagehole"></div>
+    </div>
+    
+    <!-- libs & files -->
     <script src="libs/jquery-1.9.1.js"></script>
     <script src="libs/bootstrap.min.js"></script>
     <script src="libs/d3.v3.min.js"></script>
+    <script src="chart.js"></script>
     <script src="vizfile.js"></script>
     <script> 
       $(window).load(function(){$('#selectReddit').modal('show');});
