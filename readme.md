@@ -6,4 +6,6 @@ The current desired additional set of major ish features is:
 - Visual Overhaul
 - Drag and drop?
 - Branch sway?
-- 
+- Reddit thread suggester
+- Click pic pulls pic over visualization ala that one a/A pluggin assignment
+- get a god damn templating system
