@@ -36,12 +36,10 @@ $("#selectReddit").on('shown.bs.modal', function(event){
         })
         
         $(".threadHeader").on("click", function(event){
-          var targ = event.target.getAttribute("id");
-          if(!targ){targ = event.target.parentElement.getAttribute("id")}
+          var targ = event.currentTarget.getAttribute("id");
           targ = targ.split("")
           targ[targ.length - 1] = ".json"
           targ = "http://www.reddit.com" + targ.join("")
-          console.log(targ)
           window.chart(targ);
           $(".commentsDiv").height( $(".textDiv").width())
           $('#selectReddit').modal('hide');

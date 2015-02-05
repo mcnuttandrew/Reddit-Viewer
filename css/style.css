@@ -2,6 +2,11 @@ body{
   overflow-x: hidden;   
 }
 
+div.comment:hover{
+  /*add shadow*/
+  border: thin solid blue;
+}
+
 .commentPush{
   /*border-left: thick solid black; */
   /*border-bottom: thin solid black;  */
@@ -62,7 +67,7 @@ ul#topRedditThreads > li:hover {
 
 #showpic {
   top: -5%;
-  right: 49.25%;
+  right: 51%;
   outline: none;
 }
 

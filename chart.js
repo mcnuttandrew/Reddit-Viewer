@@ -49,6 +49,7 @@ this.chart = (function(address){
     }  
     return layerNodes;
   }
+  this.comment_id = 0; 
   this.maxScore = 0;
   this.makeNode = function(element){
     var text = element.data.body;
@@ -59,7 +60,8 @@ this.chart = (function(address){
       children = this.loadIn(element.data.replies.data.children);    
     }
     if(score > that.maxScore){that.maxScore = score}
-    return {"text": text, "children": children, "score": score, "author": author};
+    that.comment_id += 1
+    return {"text": text, "children": children, "score": score, "author": author, "id": comment_id};
   }
   
   this.loadPageElements = function(body){
@@ -198,7 +200,8 @@ this.chart = (function(address){
   
   //god i wish i had a templating engine
   this.renderComment = function(comment, bump){
-    var commentString = "<div class='comment row'>"
+    //comment has full amount od data required for bind, can we do less?
+    var commentString = "<div class='comment row' id=" + comment.id + ">"
     if(bump === 0){
       commentString += "<div class='col-xs-12 commentHold'>"
     } else {
@@ -211,6 +214,18 @@ this.chart = (function(address){
     commentString += "<p class='commentBlock'>" + comment.text + "</p>"
     commentString += "<h5>" + comment.author + "</h5></div></div>"
     $(".textDiv").append(commentString);
+    //binding to graphic
+    $("div#" + comment.id).on('click', function(event){
+        var id = event.currentTarget.getAttribute('id');
+        var targetNode = that.d3DataMap[id - 1];
+        that.clickNode(targetNode);
+    })
+    
+    $("div#" + comment.id).on('mouseover', function(event){
+        var id = event.currentTarget.getAttribute('id');
+        var targetNode = that.d3DataMap[id - 1];
+        that.hoverNode(targetNode);
+    })
   }
   
   this.selectedCommentIncluded = function(comment){
@@ -242,12 +257,31 @@ this.chart = (function(address){
     })
   }
   
+  this.clickNode = function(node){
+    that.treeDFScaller(node.data);
+    that.renderComments();
+    that.transitionProperty(that.circleNodes, 'fill', '#CEE3F8', 'white');
+    that.transitionPropertyWithChildren(that.circleNodes,'fill', '#CEE3F8', 'white', 'orangered');
+    that.transitionPropertyWithChildren(that.lines, 'stroke-width', 2, 1, 1.5);
+  }
+  
+  this.hoverNode = function(node){
+    that.circleNodes.transition().attr('stroke', function(d){
+      return ( (node.data.id == d.data.id) ? 'blue' : 'black');
+    }).attr('stroke-width', function(d){
+      return ( (node.data.id == d.data.id) ? '5' : '1');
+    })
+  }
+  
   this.postStatistics = function(){
     $(".statArea h1").empty();
     $(".statArea h1").append("displaying ("+this.counter +"/"+ this.totalComments + ")")
   }
     
   //draw shit & data bind
+  that.d3DataMap =  that.d3DataMap.sort(function(a, b){
+    return (a.data.id - b.data.id);
+  }) 
   this.lines = svg.selectAll("line").data(that.d3DataMap).enter().append("line")
       .attr("x1", function(d){return d.location.x;})
       .attr("y1", function(d){return d.location.y;})
@@ -259,13 +293,8 @@ this.chart = (function(address){
       .attr("cy", function(d){return d.location.y;})
       .attr("r",  function(d){return that.getScoreRadius(d.data, 5)})
       .attr('fill', "#FFFFFF").attr('stroke', "#000000")
-      .on("click", function(d){
-        that.treeDFScaller(d.data);
-        that.renderComments();
-        that.transitionProperty(that.circleNodes, 'fill', 'blue', 'white');
-        that.transitionPropertyWithChildren(that.circleNodes,'fill', 'blue', 'white', 'orangered');
-        that.transitionPropertyWithChildren(that.lines, 'stroke-width', 2, 1, 1.5);
-      } );
+      .on("click", function(d){that.clickNode(d)} )
+      .on("mouseover", function(d){that.hoverNode(d)});
   this.rootCircleNode = svg.append("circle").attr("cx", width/2).attr("cy", height/2)
       .attr("r", 40).attr('fill', "blue").attr('stroke', "#000000")
       .on("click", function(d){
@@ -273,6 +302,13 @@ this.chart = (function(address){
         that.renderComments();
         that.transitionPropertyWithChildren(that.circleNodes,'fill', 'blue', 'white', 'orangered');
       } );
+      //two stage mission, click on comment to render that comment and children
+      //linked hovering. 
+      
+      //heres the comment binding plan
+      //set up a jquery listener listens for click on rendered comments
+      //on click we hit a transition property on that and 
+      
 
   //click root node on default
   that.treeDFScaller(that.rootNode);
