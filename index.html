@@ -6,6 +6,7 @@
     <title>reddit viewer</title>
     <link rel="stylesheet" href="css/bootstrap.css" >
     <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" type="image/jpeg" href="images/favicon.jpeg">
   </head>
   <body>
     <div class='row header'>
@@ -28,16 +29,18 @@
 
 
     <!-- Modals -->
+    <!-- select thread -->
     <div class="modal fade" id="selectReddit" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-body">
             <div class="row">
               <div class="col-xs-12 text-center">
+                <image src="images/reddit_logo.png">
                 <h3> enter a full http address of a reddit thread</h3>
                 <input type="text" id="addressInput" style="width: 100%">
                 <button type="button btn btn-primary btn-lg" id="newAddressSubmit">Submit</button>
-                <h4> if you can't think of any here are the top ones on reddit</h4>
+                <h4> ...or just pick one from top threads on reddit</h4>
                 <ul id="topRedditThreads"></ul>
               </div>
             </div>
@@ -46,6 +49,7 @@
       </div>
     </div>
     
+    <!-- image pop up -->
     <div class="modal fade" id="showpic" tabindex="-1" role="dialog" aria-hidden="true">
       <div class="modal-dialog imagehole"></div>
     </div>

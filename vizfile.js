@@ -52,7 +52,5 @@ $(".picDiv").on("click", function(event){
   event.preventDefault();
   $("#showpic").modal('show');
   var targetImage = "url(" + event.target.parentElement.getAttribute("href") + ")"
-  // var size = 
   $("#showpic > .fade").css("background-image", targetImage).css("opacity", 1);
-      // css("background-size", );
 })

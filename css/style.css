@@ -56,7 +56,7 @@ div.commentForm {
 
 ul#topRedditThreads {
   list-style-type: none;
-  max-height: 500px;
+  max-height: 225px;
   overflow-y: scroll;
   overflow-x: hidden;
 }
