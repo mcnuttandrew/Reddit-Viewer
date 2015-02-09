@@ -74,6 +74,14 @@ this.chart = (function(address){
                     date: new Date(postInfo.created_utc)}
     var postTemplate = Handlebars.compile($("#postTemplate").html());
     $(".picDiv").append(postTemplate(postData));
+    
+    $("#postPic").on("click", function(event){
+      event.preventDefault();
+      $("#showpic").modal('show');
+      var targetImage = "url(" + event.target.parentElement.getAttribute("href") + ")"
+      $("#showpic > .fade").css("background-image", targetImage).css("opacity", 1);
+    })
+    
     $(".titleArea").empty();     
     $(".titleArea").append("<h1>/" + postInfo.subreddit + "/</h1>")
   }
@@ -207,7 +215,7 @@ this.chart = (function(address){
     
     //binding to graphic
     $("div#" + comment.id).on('click', function(event){
-      event.preventDefault();
+      // event.preventDefault();
       var id = event.currentTarget.getAttribute('id');
       var targetNode = that.d3DataMap[id - 1];
       that.clickNode(targetNode);

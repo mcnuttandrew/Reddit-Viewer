@@ -29,13 +29,8 @@ $("#selectReddit").on('shown.bs.modal', function(event){
         //templating here
         _that.frontCollection.forEach(function(el){
           var threadData = {threadAddress: el.url, thumbnail: el.thumbnail, title: el.title}
-          // commentString = "<li><a>"
-          // commentString += "<div class='threadHeader row' id='" + el.url +"'><div class='col-xs-3'>";
-          // commentString += "<img src=" + el.thumbnail + "></div>";
-          // commentString += "<div class='col-xs-8'><h4>" + el.title + "</h4></div></div></a></li>";
           var threadTemplate = Handlebars.compile($("#threadTemplate").html());
           $("#topRedditThreads").append(threadTemplate(threadData));
-          // $("#topRedditThreads").append(commentString);
         })
         
         $(".threadHeader").on("click", function(event){
@@ -51,9 +46,7 @@ $("#selectReddit").on('shown.bs.modal', function(event){
     })
 })
 
-$(".picDiv").on("click", function(event){
-  event.preventDefault();
-  $("#showpic").modal('show');
-  var targetImage = "url(" + event.target.parentElement.getAttribute("href") + ")"
-  $("#showpic > .fade").css("background-image", targetImage).css("opacity", 1);
+Handlebars.registerHelper('redditMarkdown', function(markdown){
+  debugger;
+  return new Handlebars.SafeString(SnuOwnd.getParser().render(markdown));
 })
