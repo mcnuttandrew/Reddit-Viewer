@@ -67,14 +67,13 @@ this.chart = (function(address){
   this.loadPageElements = function(body){
     $(".picDiv").empty();
     var postInfo = body[0].data.children[0].data;
-    $(".picDiv").append(
-      "<div class='row'><div class='col-xs-3'>" 
-      +  "<a href=" + postInfo.url + "><img src=" + postInfo.thumbnail + "></a>"
-      + "</div><div class='col-xs-8'>" 
-      + "<h4><a href='" + postInfo.url + "'>" 
-      + postInfo.title + '</a></h4>'
-      + "<h5>" + postInfo.author + " on " + new Date(postInfo.created_utc) +"</h5>"
-      + "</div></div>")
+    var postData = {picAddress: postInfo.url, 
+                    thumbnail: postInfo.thumbnail,
+                    posterName: postInfo.author,
+                    title: postInfo.title,
+                    date: new Date(postInfo.created_utc)}
+    var postTemplate = Handlebars.compile($("#postTemplate").html());
+    $(".picDiv").append(postTemplate(postData));
     $(".titleArea").empty();     
     $(".titleArea").append("<h1>/" + postInfo.subreddit + "/</h1>")
   }
@@ -113,7 +112,7 @@ this.chart = (function(address){
     return node["mass"] = total;
   }
   
-  //map the data, via a simple b tree traversal
+  //map the data, via a simple tree traversal
   that.d3DataMap = [];
   this.treeTraversal = function(parentLocation, parent, parentRadius, parentAngle){
     if(!parent || !parent.children){return;}
@@ -198,27 +197,20 @@ this.chart = (function(address){
     }
   }
   
-  //god i wish i had a templating engine
   this.renderComment = function(comment, bump){
-    //comment has full amount od data required for bind, can we do less?
-    var commentString = "<div class='comment row' id=" + comment.id + ">"
-    if(bump === 0){
-      commentString += "<div class='col-xs-12 commentHold'>"
-    } else {
-      commentString += "<div class='col-xs-1 commentPush'></div>" 
-      commentString += "<div class='col-xs-11 commentHold'>"
-      // var commentRow = $($($(".textDiv").last()[0]).children()[0]).children();  
-      // $(commentRow[0]).height($(commentRow[1]).height());
-    }
+    var commentData = {commentId: comment.id, 
+                       commentText: comment.text, 
+                       commentAuthor: comment.author, 
+                       commentIsChild: (bump !== 0)}
+    var commentTemplate = Handlebars.compile($("#commentTemplate").html());
+    $(".textDiv").append(commentTemplate(commentData));
     
-    commentString += "<p class='commentBlock'>" + comment.text + "</p>"
-    commentString += "<h5>" + comment.author + "</h5></div></div>"
-    $(".textDiv").append(commentString);
     //binding to graphic
     $("div#" + comment.id).on('click', function(event){
-        var id = event.currentTarget.getAttribute('id');
-        var targetNode = that.d3DataMap[id - 1];
-        that.clickNode(targetNode);
+      event.preventDefault();
+      var id = event.currentTarget.getAttribute('id');
+      var targetNode = that.d3DataMap[id - 1];
+      that.clickNode(targetNode);
     })
     
     $("div#" + comment.id).on('mouseover', function(event){
@@ -302,13 +294,6 @@ this.chart = (function(address){
         that.renderComments();
         that.transitionPropertyWithChildren(that.circleNodes,'fill', 'blue', 'white', 'orangered');
       } );
-      //two stage mission, click on comment to render that comment and children
-      //linked hovering. 
-      
-      //heres the comment binding plan
-      //set up a jquery listener listens for click on rendered comments
-      //on click we hit a transition property on that and 
-      
 
   //click root node on default
   that.treeDFScaller(that.rootNode);

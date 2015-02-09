@@ -6,3 +6,4 @@ The current desired additional set of major ish features is:
 - Load in modal stuff 
 - Children stuff
 - get a god damn templating system
+- reddit markdown

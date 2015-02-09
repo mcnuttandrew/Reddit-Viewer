@@ -27,12 +27,15 @@ $("#selectReddit").on('shown.bs.modal', function(event){
           _that.frontCollection.push(threadData);
         })
         //templating here
-        _that.frontCollection.map(function(el){
-          commentString = "<li><a>"
-          commentString += "<div class='threadHeader row' id='" + el.url +"'><div class='col-xs-3'>";
-          commentString += "<img src=" + el.thumbnail + "></div>";
-          commentString += "<div class='col-xs-8'><h4>" + el.title + "</h4></div></div></a></li>";
-          $("#topRedditThreads").append(commentString);
+        _that.frontCollection.forEach(function(el){
+          var threadData = {threadAddress: el.url, thumbnail: el.thumbnail, title: el.title}
+          // commentString = "<li><a>"
+          // commentString += "<div class='threadHeader row' id='" + el.url +"'><div class='col-xs-3'>";
+          // commentString += "<img src=" + el.thumbnail + "></div>";
+          // commentString += "<div class='col-xs-8'><h4>" + el.title + "</h4></div></div></a></li>";
+          var threadTemplate = Handlebars.compile($("#threadTemplate").html());
+          $("#topRedditThreads").append(threadTemplate(threadData));
+          // $("#topRedditThreads").append(commentString);
         })
         
         $(".threadHeader").on("click", function(event){

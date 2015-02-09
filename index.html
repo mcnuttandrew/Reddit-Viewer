@@ -26,8 +26,48 @@
       </div>
     </div>
     
-
-
+    <!--Handlebars templates -->
+    <script type='text/x-handlebars' id='commentTemplate'>
+      <div class='comment row' id="{{ commentId }}">
+        {{#if commentIsChild}}
+          <div class="col-xs-1 commentPush"></div>
+          <div class="col-xs-11 commentHold">
+            <p class="commentBlock">{{ commentText }}</p>
+            <h5 class='userName'> {{ commentAuthor }}</h5>
+          </div>
+        {{else}}
+          <div class="col-xs-11 commentHold">
+            <p class="commentBlock">{{ commentText }}</p>
+            <h5 class='userName'> {{ commentAuthor }}</h5>
+          </div>
+        {{/if}}
+      </div>
+    </script>
+    
+    <script type='text/x-handlebars' id='postTemplate'>
+      <div class="row">
+        <div class='col-xs-3'>
+          <a href="{{picAddress}}"><img src="{{thumbnail}}"> </a>
+        </div>
+        <div class="col-xs-8">
+          <h4><a href='{{picAddress}}'> {{title}} </h4>
+          <h5 class="posterName"> {{posterName}} on {{date}} </h5>
+        </div>
+      </div>
+    </script>
+    
+    <script type='text/x-handlebars' id="threadTemplate">
+      <li>
+        <div class="threadHeader row" id="{{ threadAddress }}">
+          <div class="col-xs-3">
+            <img src="{{ thumbnail }}">
+          </div>
+          <div class="col-xs-8">
+            <h4><a href="#">{{title}}</a></h4>
+          </div>
+        </div>
+      </li>
+    </script>
     <!-- Modals -->
     <!-- select thread -->
     <div class="modal fade" id="selectReddit" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
@@ -58,6 +98,7 @@
     <script src="libs/jquery-1.9.1.js"></script>
     <script src="libs/bootstrap.min.js"></script>
     <script src="libs/d3.v3.min.js"></script>
+    <script src="libs/handlebars-v2.0.0.js"></script>
     <script src="chart.js"></script>
     <script src="vizfile.js"></script>
     <script> 
